@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neovis.js</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdn2-jsdelivr.pages.dev/main/fontawesome_pro@6.6.0/css/all.css"/>
+
+  <!-- library Neovis.js -->
+  <script src="https://unpkg.com/neovis.js@2.1.0/dist/neovis.js"></script>
+
+  <!-- Import file CSS eksternal -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrapper">
+    <h2 class="title">Visualisasi Neo4j</h2>
+    <div id="viz"></div>
+    <div class="input-group">
+      <input
+        id="cypher"
+        type="text"
+        placeholder="insert cypher query..."
+        autocomplete="off"
+      />
+      <button id="reload" aria-label="Run query">
+        <i class="fa-solid fa-paper-plane-top"></i> 
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let viz;
+
+    // Konfigurasi utama Neovis.js
+    const config = {
+      containerId: "viz", 
+      neo4j: {
+        serverUrl: "bolt://localhost:7687",   // URL koneksi ke Neo4j
+        serverUser: "neo4j",                 // Username Neo4j
+        serverPassword: "12345678"          // Password Neo4j
+      },
+      
+      // Konfigurasi label node yang ditampilkan
+      labels: {
+        Satelit: {
+            // Properti yang akan ditampilkan sebagai label utama pada node
+            label: "nama_satelit",
+            // Properti yang digunakan untuk mengelompokkan atau mengidentifikasi node (biasanya ID)
+            group: "id_satelit"
+        },
+        Planet: {
+            label: "nama_planet",
+            group: "id_planet"
+        },
+        Komposisi: {
+            // Asumsi nama properti, sesuaikan jika berbeda di file CSV Anda
+            label: "komposisi_udara",
+            group: "id_komposisi"
+        },
+        JenisSatelit: {
+            // Asumsi nama properti, sesuaikan jika berbeda di file CSV Anda
+            label: "jenis_satelit",
+            group: "id_jenis_satelit"
+        },
+        JenisPlanet: {
+            // Asumsi nama properti, sesuaikan jika berbeda di file CSV Anda
+            label: "tipe",
+            group: "id_jenis_planet"
+        }
+    },
+
+
+      // Konfigurasi relasi
+      relationships: {
+        '*': {},
+        MENGORBIT: {},
+        ADALAH_JENIS: {},
+        MEMILIKI_KOMPOSISI: {},
+        TERBUAT_DARI: {}
+},
+      // Query default yang akan dijalankan saat halaman dimuat
+      initialCypher: "MATCH (n)-[r]->(m) RETURN n, r, m",
+      
+      // Konfigurasi visualisasi menggunakan vis.js
+      visConfig: {
+        nodes: {
+          shape: 'star',          // Bentuk node: 'box', 'circle', 'ellipse', 'star', 'triangle', dll.
+          size: 12,              // Ukuran node
+          scaling: { min: 12, max: 12 }, // Skala ukuran node
+          font: {
+            size: 12,            // Ukuran font label node
+            face: 'arial'        // Jenis font
+          }
+        },
+        edges: {
+          smooth: { enabled: true, type: 'dynamic' }, // Garis halus
+          arrows: { to: { enabled: true } }           // Panah pada relasi
+        }
+      }
+    };
+
+    function renderCypher(query) {
+      viz.renderWithCypher(query);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const input = document.getElementById("cypher");
+      const btn = document.getElementById("reload");   
+
+      // Isi default input dengan query awal
+      input.value = config.initialCypher;
+
+      viz = new NeoVis.default(config);
+      viz.render();
+
+      btn.addEventListener("click", () => {
+        const q = input.value.trim();
+        if (q) renderCypher(q);
+      });
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
