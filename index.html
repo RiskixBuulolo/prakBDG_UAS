@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Popoto.js</title>
+
+    <!-- Popoto dan Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/popoto/dist/popoto.min.css">
+    <link rel="stylesheet" href="https://cdn2-jsdelivr.pages.dev/main/fontawesome_pro@6.6.0/css/all.css">
+
+    <style>
+        /* Ikon untuk label node: Dosen, Mahasiswa, Matakuliah */
+        .ppt-taxo__span-icon.Dosen::before,
+        .ppt-taxo__span-icon.Mahasiswa::before,
+        .ppt-taxo__span-icon.Matakuliah::before {
+            content: "\f02c"; 
+            font-family: "Font Awesome 6 Pro";
+            font-weight: 900;
+            color: #8bb71a;
+            margin-right: 5px;
+        }
+
+        /* Warna teks pada link relasi */
+        .ppt-link__text--value {
+            fill: white;
+        }
+
+        /* Header bagian */
+        .ppt-section-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            font-size: 1.2rem;
+        }
+
+        .ppt-node-image image {
+    width: 40px;
+    height: 40px;
+}
+
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="ppt-body">
+    <section class="ppt-section-main">
+        <!-- Judul tampilan -->
+        <div class="ppt-section-header">
+            <span class="ppt-header-span">Neo4j</span> (Popoto.js)
+        </div>
+
+        <!-- Area tampilan graf -->
+        <div class="ppt-container-graph">
+            <nav id="popoto-taxonomy" class="ppt-taxo-nav"></nav>
+            <div id="popoto-graph" class="ppt-div-graph"></div>
+        </div>
+
+        <!-- Panel hasil query Cypher -->
+        <div id="popoto-cypher" class="ppt-container-cypher"></div>
+
+        <!-- Tampilan jumlah hasil -->
+        <div class="ppt-section-header">
+            Hasil <span id="result-total-count" class="ppt-count"></span>
+        </div>
+        <div id="popoto-results" class="ppt-container-results"></div>
+    </section>
+
+    <!-- Library utama yang dibutuhkan -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/neo4j-driver-lite/lib/browser/neo4j-lite-web.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popoto/dist/popoto.min.js"></script>
+
+    <script>
+        // Koneksi ke database Neo4j
+        const driver = neo4j.driver(
+            "bolt://localhost:7687",
+            neo4j.auth.basic("neo4j", "12345678"),
+            { disableLosslessIntegers: true }
+        );
+
+        // Inisialisasi koneksi Popoto
+        popoto.runner.DRIVER = driver;
+        popoto.query.COLLECT_RELATIONS_WITH_VALUES = true;
+
+// Konfigurasi untuk Node Provider
+popoto.provider.node.Provider = {
+    "Satelit": {
+        returnAttributes: ["nama_satelit", "id_satelit", "jarak_satelit_ke_planet", "id_planet"], //untuk memasukin atribut atau properti sesuai file csvnya
+        constraintAttribute: "id_satelit", //sebagai key unik nya yaitu cosntrainnya agar mempermudah pencarian node
+        autoExpandRelations: true, //auto langsung terbuka jika memmpunyai relasi
+        getDisplayType: function (node) {
+            return popoto.provider.node.DisplayTypes.IMAGE; //untuk menampilkan gambar pada node yang digunakan
+        },
+        getImagePath: function (node) {
+            return "image/satelit.png"; // file gambar yang digunakan
+        } // penjelasannya bawah bawahnya sama seperti tadi LANJUT BAGIAN RELASI DIBAWAHNYA
+    },
+    "Planet": {
+        returnAttributes: ["nama_planet", "id_planet", "urutan_dari_matahari", "diameter_km", "jumlah_satelit"],
+        constraintAttribute: "id_planet",
+        autoExpandRelations: true,
+        getDisplayType: function (node) {
+            return popoto.provider.node.DisplayTypes.IMAGE;
+        },
+        getImagePath: function (node) {
+            return "image/planet.png"; // Ganti dengan path gambar klub
+        }
+    },
+    "Komposisi": {
+        returnAttributes: ["komposisi_udara", "id_planet", "id_komposisi"],
+        constraintAttribute: "id_komposisi",
+        autoExpandRelations: true,
+        getDisplayType: function (node) {
+            return popoto.provider.node.DisplayTypes.IMAGE;
+        },
+        getImagePath: function (node) {
+            return "image/komposisi.png"; // Ganti dengan path gambar bendera/negara
+        }
+    },
+    "JenisSatelit": {
+        returnAttributes: ["jenis_satelit",, "id_satelit", "id_jenis_satelit"],
+        constraintAttribute: "id_jenis_satelit",
+        autoExpandRelations: true,
+        getDisplayType: function (node) {
+            return popoto.provider.node.DisplayTypes.IMAGE;
+        },
+        getImagePath: function (node) {
+            return "image/jenis_satelit.png"; // Ganti dengan path gambar cabang olahraga
+        }
+    },
+    "JenisPlanet": {
+        returnAttributes: ["tipe", "id_jenis_planet", "id_planet"],
+        constraintAttribute: "id_jenis_planet",
+        autoExpandRelations: true,
+        getDisplayType: function (node) {
+            return popoto.provider.node.DisplayTypes.IMAGE;
+        },
+        getImagePath: function (node) {
+            return "image/jenis_planet.png"; // Ganti dengan path gambar medali/prestasi
+        }
+    }
+};
+
+// Konfigurasi untuk Link (Relationship) Provider INI ADALAH BAGIAN RELASI NYA
+popoto.provider.link.Provider = {
+    "MENGORBIT": { // sesuaikan nama relasi yang ada di neo4j langsung
+        getTextValue: function (link) { // untuk memunculkan sebuah text pada relasi
+            // Contoh output: "mengorbt"
+            return "mengorbit " + popoto.provider.node.getTextValue(link.target);
+        } // sisanya sama penjelesannya, selesai
+    },
+    "ADALAH_JENIS": {
+        getTextValue: function (link) {
+            // Contoh output: "Bermain di Paris Saint-Germain"
+            return "adalah jenis " + popoto.provider.node.getTextValue(link.target);
+        }
+    },
+    "MEMILIKI_KOMPOSISI": {
+        getTextValue: function (link) {
+            // Contoh output: "Berasal dari Argentina"
+            return "memiliki komposisi " + popoto.provider.node.getTextValue(link.target);
+        }
+    },
+    "TERBUAT_DARI": {
+        getTextValue: function (link) {
+            // Contoh output: "Berkompetisi di Sepak Bola"
+            return "terbuat dari " + popoto.provider.node.getTextValue(link.target);
+        }
+    }
+};
+
+
+
+
+
+        // CSS untuk label taksonomi
+        popoto.provider.taxonomy.Provider = {
+            getCSSClass: function (label, element) {
+                return "ppt-taxo__" + element + " " + label;
+            }
+        };
+
+        // Menampilkan jumlah hasil pencarian
+        popoto.result.onTotalResultCount(function (count) {
+            document.getElementById("result-total-count").innerHTML = "(" + count + ")";
+        });
+
+        // Mulai visualisasi graf dari node Dosen
+        driver.verifyConnectivity().then(function () {
+            popoto.start("Planet");
+        }).catch(function (error) {
+            alert("Koneksi ke Neo4j gagal: " + error);
+            console.error(error);
+        });
+    </script>
+</body>
+</html>
