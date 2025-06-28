@@ -1,0 +1,82 @@
+MATCH (n) DETACH DELETE n
+
+// 1
+LOAD CSV WITH HEADERS FROM "http://localhost/prakBDGuas/satelit.csv" AS row //prakBDGuas itu nama foldernya
+CREATE (s:Satelit)
+SET s = row;
+
+// 2
+LOAD CSV WITH HEADERS FROM "http://localhost/prakBDGuas/planet.csv" AS row
+CREATE (p:Planet)
+SET p = row;
+
+// 3
+LOAD CSV WITH HEADERS FROM "http://localhost/prakBDGuas/komposisi.csv" AS row
+CREATE (k:Komposisi)
+SET k = row;
+
+// 4
+LOAD CSV WITH HEADERS FROM "http://localhost/prakBDGuas/jenis_satelit.csv" AS row
+CREATE (js:JenisSatelit)
+SET js = row;
+
+// 5
+LOAD CSV WITH HEADERS FROM "http://localhost/prakBDGuas/jenis_planet.csv" AS row
+CREATE (jp:JenisPlanet)
+SET jp = row;
+
+
+=================================================
+
+// 6. Membuat relasi antara Satelit dan Planet
+// Satelit mengorbit Planet
+MATCH (s:Satelit), (p:Planet)
+WHERE s.id_planet = p.id_planet
+MERGE (s)-[:MENGORBIT]->(p);
+
+// 7. Membuat relasi antara Planet dan Jenis Planet
+// Planet memiliki jenis tertentu
+MATCH (p:Planet), (jp:jenis_planet)
+WHERE p.id_planet = jp.id_planet
+MERGE (p)-[:ADALAH_JENIS]->(jp);
+
+// 8. Membuat relasi antara Satelit dan Jenis Satelit
+// Satelit memiliki jenis tertentu
+MATCH (s:Satelit), (js:JenisSatelit)
+WHERE s.id_satelit = js.id_satelit
+MERGE (s)-[:ADALAH_JENIS]->(js);
+
+// 9. Membuat relasi antara Planet dan Komposisi (BISA !!!!!!)
+// Planet memiliki komposisi tertentu
+MATCH (p:Planet), (k:komposisi)
+WHERE p.id_planet = k.id_planet
+MERGE (p)-[:MEMILIKI_KOMPOSISI]->(k);
+
+// 10. Membuat relasi antara Satelit dan Komposisi
+// Satelit memiliki komposisi tertentu
+MATCH (s:Satelit), (k:komposisi)
+WHERE s.id_planet = k.id_planet
+MERGE (s)-[:TERBUAT_DARI]->(k);
+
+
+====================================================================
+
+CREATE CONSTRAINT satelit_id_unique IF NOT EXISTS
+FOR (s:Satelit)
+REQUIRE s.id_satelit IS UNIQUE;
+
+CREATE CONSTRAINT planet_id_unique IF NOT EXISTS
+FOR (p:Planet)
+REQUIRE p.id_planet IS UNIQUE;
+
+CREATE CONSTRAINT komposisi_id_unique IF NOT EXISTS
+FOR (k:Komposisi)
+REQUIRE k.id_komposisi IS UNIQUE;
+
+CREATE CONSTRAINT jenis_satelit_id_unique IF NOT EXISTS
+FOR (js:JenisSatelit)
+REQUIRE js.id_jenis_satelit IS UNIQUE;
+
+CREATE CONSTRAINT jenis_planet_id_unique IF NOT EXISTS
+FOR (jp:JenisPlanet)
+REQUIRE jp.id_jenis_planet IS UNIQUE;
